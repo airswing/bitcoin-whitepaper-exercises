@@ -27,7 +27,6 @@ Blockchain.blocks.push({
 	timestamp: Date.now(),
 });
 
-// TODO: insert each line into blockchain
 for (let line of poem) {
 	var block = {
 		index: Blockchain.blocks.length,
@@ -36,7 +35,6 @@ for (let line of poem) {
 		prevHash: Blockchain.blocks[Blockchain.blocks.length-1].hash
 	};
 	block.hash = blockHash(block)
-	console.log(block)
 	Blockchain.blocks.push(block)
 }
 
@@ -47,8 +45,7 @@ console.log(`Blockchain is valid: ${verifyChain(Blockchain)}`);
 
 function blockHash(bl) {
 	return crypto.createHash("sha256").update(
-		// TODO: use block data to calculate hash
-		bl.index + bl.hash + bl.data + bl.timestamp + bl.prevHash	
+		bl.index + bl.hash + bl.data + bl.timestamp + bl.prevHash
 	).digest("hex");
 }
 
@@ -64,7 +61,7 @@ function verifyChain(chain) {
 		}
 		if(chain.blocks[i].data !== poem[i-1]) {
 			console.log('Invalid block at index:' + i + ' Tupacs poem is invalid')
-			return false;	
+			return false;
 		}
 	}
 	return true;
