@@ -44,9 +44,11 @@ addPoem()
 async function addPoem() {
 	var transactions = [];
 
-	// TODO: add poem lines as authorized transactions
-	// for (let line of poem) {
-	// }
+	for (let line of poem) {
+		var tx = createTransaction(line)
+		await authorizeTransaction(tx)
+		transactions.push(tx)
+	}
 
 	var bl = createBlock(transactions);
 
@@ -55,15 +57,28 @@ async function addPoem() {
 	return Blockchain;
 }
 
+function createTransaction(txdata) {
+	var tx = {
+		data: txdata,
+	}
+	transaction.hash = transactionHash(tx)
+	return tx;
+}
+
+async function authorizeTransaction(tx) {
+	tx.pubKey = PUB_KEY_TEXT
+	tx.signature = await createSignature(tx.data, PRIV_KEY_TEXT)
+}
+
 async function checkPoem(chain) {
 	console.log(await verifyChain(chain));
 }
 
-function createBlock(data) {
+function createBlock(txdata) {
 	var bl = {
 		index: Blockchain.blocks.length,
 		prevHash: Blockchain.blocks[Blockchain.blocks.length-1].hash,
-		data,
+		data: txdata,
 		timestamp: Date.now(),
 	};
 
@@ -129,6 +144,9 @@ async function verifyBlock(bl) {
 		if (!Array.isArray(bl.data)) return false;
 
 		// TODO: verify transactions in block
+		for(let tx of bl.data) {
+			//if(tx.)
+		}
 	}
 
 	return true;
