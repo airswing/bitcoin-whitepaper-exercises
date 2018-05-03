@@ -61,7 +61,7 @@ function createTransaction(txdata) {
 	var tx = {
 		data: txdata,
 	}
-	transaction.hash = transactionHash(tx)
+	tx.hash = transactionHash(tx)
 	return tx;
 }
 
@@ -143,12 +143,27 @@ async function verifyBlock(bl) {
 		if (bl.hash !== blockHash(bl)) return false;
 		if (!Array.isArray(bl.data)) return false;
 
-		// TODO: verify transactions in block
 		for(let tx of bl.data) {
-			//if(tx.)
+			if(!verifyTransaction(tx)) {
+				return false;
+			}
 		}
 	}
 
+	return true;
+}
+
+async function verifyTransaction(tx) {
+	//tx fields: hash data signature pubKey
+	if(transactionHash(tx) !== tx.hash){
+		return false;
+	}
+	if(tx.pubKey !== PUB_KEY_TEXT) {
+		return false;
+	}
+	if(!verifySignature(tx.signature, tx.pubKey)) {
+		return false;
+	}
 	return true;
 }
 
