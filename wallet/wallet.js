@@ -81,52 +81,53 @@ async function spend(fromAccount, toAccount, amountToSpend) {
 		outputs: [],
 	};
 
-	if(fromAccount.outputs.length === 0)
-		throw `Can't spend without inputs!`;
 	// pick inputs to use from fromAccount's outputs (i.e. previous txns, see line 22), sorted descending
-	var sortedInputs = fromAccount.outputs.sort((a, b) => parseFloat(a.amount) + parseFloat(b.amount));
+	var sortedInputs = [...fromAccount.outputs].sort((a, b) => parseFloat(a.amount) + parseFloat(b.amount));
 
-	var inputsNeeded = 0;
+	var inputsToUse = [];
 	var inputAmounts = 0;
 
  	for (let input of sortedInputs) {
+		// remove input from output-list
+		fromAccount.outputs.splice(fromAccount.outputs.indexOf(input),1);
+
+		inputsToUse.push(input);
 		inputAmounts += input.amount;
-		inputsNeeded++;
+
 		if(inputAmounts >= amountToSpend) break;
  	}
 
-	if (inputAmounts < amountToSpend)
+	if (inputAmounts < amountToSpend) {
+		fromAccount.outputs.push(...inputsToUse);
 		throw `Don't have enough to spend ${amountToSpend}!`;
-
-	trData.inputs = sortedInputs.slice(0, inputsNeeded);
-	for(let input of trData.inputs) {
-		await Blockchain.authorizeInput(input, fromAccount.privKey);
 	}
 
-	fromAccount.outputs = sortedInputs.slice(inputsNeeded, sortedInputs.length); //keep only the leftover outputs
+	for(let input of inputsToUse) {
+		trData.inputs.push(
+			await Blockchain.authorizeInput({
+				account: input.account,
+				amount: input.amount,
+			}, fromAccount.privKey)
+		);
+	}
+	//record output
+	trData.outputs.push({account: toAccount.pubKey, amount: amountToSpend});
 
-	var toOutput = {
-		account: toAccount.pubKey,
-		amount: amountToSpend,
-	};
-	trData.outputs.push(toOutput);
-	toAccount.outputs.push(toOutput);
-
-	var changeAmount = inputAmounts - amountToSpend;
-	if(changeAmount > 0) {
-		var changeOutput = {
-			account: fromAccount.pubKey,
-			amount: changeAmount,
-		};
-		trData.outputs.push(changeOutput);
-		fromAccount.outputs.push(changeOutput);
+	// is "change" output needed?
+	if(inputAmounts >= amountToSpend){
+		trData.outputs.push({account: fromAccount.pubKey, amount: (inputAmounts - amountToSpend)});
 	}
 
-	var allTxs = [];
-	allTxs.push(trData);
 	// create transaction and add it to blockchain
-	var tr = Blockchain.createTransaction(allTxs)
-	Blockchain.insertBlock(Blockchain.createBlock(tr));
+	var tr = Blockchain.createTransaction(trData);
+	Blockchain.insertBlock(Blockchain.createBlock([tr]));
+
+	// record outputs in our wallet (if needed)
+	for(let output of trData.outputs){
+		if(output.account in wallet.accounts){
+			wallet.accounts[output.account].outputs.push(output);
+		}
+	}
 }
 
 function accountBalance(account) {

@@ -52,7 +52,9 @@ function createTransaction(data) {
 	var tr = {
 		data,
 	};
+
 	tr.hash = transactionHash(tr);
+
 	return tr;
 }
 
@@ -118,8 +120,6 @@ async function verifyBlock(bl) {
 	if (bl.data == null) return false;
 	if (bl.index === 0) {
 		if (bl.hash !== "000000") return false;
-		//else return true;
-
 	}
 	else {
 		if (!bl.prevHash) return false;
@@ -130,14 +130,14 @@ async function verifyBlock(bl) {
 		)) {
 			return false;
 		}
-		var hashed = blockHash(bl);
 		if (bl.hash !== blockHash(bl)) return false;
-
 		if (!Array.isArray(bl.data)) return false;
+
 		for (let tr of bl.data) {
 			if (!(await verifyTransaction(tr))) return false;
 		}
 	}
+
 	return true;
 }
 
@@ -148,5 +148,6 @@ async function verifyChain(chain) {
 		if (!(await verifyBlock(bl))) return false;
 		prevHash = bl.hash;
 	}
+
 	return true;
 }
