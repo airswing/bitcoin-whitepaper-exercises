@@ -46,15 +46,42 @@ countMyEarnings();
 // **********************************
 
 function addPoem() {
-	// TODO: add lines of poem as transactions to the transaction-pool
+	for(let line of poem) {
+		var tx = createTransaction(line);
+		tx.fee = Math.floor(Math.random() * 10);
+		transactionPool.push(tx);
+	}
 }
 
 function processPool() {
-	// TODO: process the transaction-pool in order of highest fees
+	var sortedPool = transactionPool.sort((a, b) => parseInt(b.fee) - parseInt(a.fee));
+
+	var blockData = [];
+
+	while (sortedPool.length > 0){
+    blockData.push(sortedPool.splice(0, maxBlockSize - 1)); // -1 because we need to keep a spot open for the coinbase tx
+	}
+
+	for(let data of blockData) {
+		data.unshift({
+			'blockFee': blockFee,
+			'account': PUB_KEY_TEXT,
+		});
+		console.log('Mining block #', Blockchain.blocks.length, ' ...\n', data);
+		Blockchain.blocks.push(createBlock(data));
+		console.log('Proof of work complete for block', Blockchain.blocks.length-1);
+	}
 }
 
 function countMyEarnings() {
-	// TODO: count up block-fees and transaction-fees
+	var totalEarnings = 0;
+	for(var i = 1; i < Blockchain.blocks.length; i++) {
+		totalEarnings += Blockchain.blocks[i].data[0].blockFee;
+		for(var k = 1; k < Blockchain.blocks[i].data.length; k++) {
+			totalEarnings += Blockchain.blocks[i].data[k].fee;
+		}
+	}
+	console.log('Total earnings: ', totalEarnings);
 }
 
 function createBlock(data) {
